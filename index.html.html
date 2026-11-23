@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Vodafone ICC – Agent Knowledge Assessment</title>
+<style>
+:root{--red:#e60000;--navy:#102e59;--blue:#1769aa;--bg:#f3f6fb;--ink:#19263b;--muted:#66758a}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:Tahoma,Arial,sans-serif;color:var(--ink);line-height:1.7}
+header{background:linear-gradient(110deg,#a90000,var(--red));color:#fff;text-align:center;padding:25px 15px}header h1{margin:0;font-size:clamp(22px,4vw,32px)}header p{margin:6px 0 0}
+.wrap{max-width:950px;margin:22px auto;padding:0 14px}.panel,.qcard{background:white;border:1px solid #e3eaf3;border-radius:16px;padding:20px;margin-bottom:16px;box-shadow:0 5px 18px #17345b10}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}label{font-weight:700;display:block;margin-bottom:5px}input,select{width:100%;padding:11px;border:1px solid #cbd6e3;border-radius:9px;font:inherit}
+.topline{display:flex;justify-content:space-between;gap:12px;color:var(--muted);font-size:14px}.progress{height:9px;background:#e7edf5;border-radius:9px;overflow:hidden;margin:10px 0 18px}.bar{height:100%;background:var(--red);width:0;transition:.2s}
+.qhead{display:flex;justify-content:space-between;gap:10px;align-items:center}.num{background:#fff0f0;color:#b00;padding:3px 11px;border-radius:30px;font-weight:bold}.topic{font-size:12px;background:#edf6ff;color:#1764a8;padding:4px 10px;border-radius:30px}.question{font-size:18px;font-weight:bold;margin:15px 0}
+.option{display:flex;gap:10px;align-items:flex-start;border:1px solid #dce4ee;border-radius:10px;padding:11px;margin:8px 0;cursor:pointer}.option:hover{background:#f7fbff;border-color:#8eb6df}.option input{width:auto;margin-top:6px;accent-color:var(--red)}
+.actions{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}button{border:0;border-radius:10px;padding:12px 21px;font:700 15px Tahoma;cursor:pointer}.primary{background:var(--red);color:white}.secondary{background:#e9eef5;color:#25364d}.hidden{display:none!important}
+.result{text-align:center;display:none}.score{font-size:clamp(36px,8vw,54px);font-weight:900;color:var(--navy);line-height:1.2;margin:14px 0}.status{font-size:25px;font-weight:800}.pass{color:#07834b}.fail{color:#c00000}.summarygrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:20px 0}.stat{background:#f5f8fc;border-radius:12px;padding:12px}.stat b{display:block;font-size:21px;color:var(--navy)}.topicrow{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #e7edf4;padding:8px 0;text-align:right}.note{color:var(--muted);font-size:13px}
+@media(max-width:600px){.panel,.qcard{padding:15px}.question{font-size:16px}}
+@media print{header{background:#a00!important}.actions,.note button{display:none!important}body{background:white}.panel{box-shadow:none}}
+</style></head>
+<body>
+<header><h1>Vodafone ICC – Agent Knowledge Assessment</h1><p>اختبار معرفة الموظف | Mixed Arabic & English</p></header>
+<div class="wrap">
+<section class="panel" id="candidate">
+<h2 style="margin-top:0">Agent Details / بيانات الموظف</h2>
+<div class="grid">
+<div><label>Agent Name / اسم الموظف *</label><input id="agentName"></div>
+<div><label>Agent Username *</label><input id="username"></div>
+<div><label>Site / الموقع *</label><select id="site"><option value="">Select site</option><option>Zahraa</option><option>Abbasia</option></select></div>
+<div><label>Supervisor / المشرف *</label><input id="supervisor"></div>
+<div><label>Team Leader / الليدر *</label><input id="leader"></div>
+</div><p class="note">اختر إجابة واحدة لكل سؤال. النتيجة وتقييم الموضوعات سيظهران بعد Submit.</p>
+</section>
+<section class="panel" id="quizPanel">
+<div class="topline"><span id="count"></span><span id="answered"></span></div><div class="progress"><div class="bar" id="bar"></div></div>
+<div id="questionArea"></div>
+<div class="actions"><button class="secondary" id="prev">Previous / السابق</button><button class="primary" id="next">Next / التالي</button><button class="primary hidden" id="submit">Submit Assessment / تسليم الاختبار</button></div>
+</section>
+<section class="panel result" id="result">
+<h2>Assessment Result / نتيجة الاختبار</h2>
+<div class="score" id="score"></div><div class="status" id="status"></div>
+<div class="summarygrid">
+<div class="stat">Correct Answers<b id="correctStat"></b></div><div class="stat">Incorrect Answers<b id="wrongStat"></b></div><div class="stat">Passing Score<b>80%</b></div>
+</div>
+<p id="summary"></p>
+<p id="sheetStatus" class="note"></p>
+<h3>Topic Performance / مستوى الأداء حسب الموضوع</h3><div id="topicBreakdown"></div>
+<h3>Correction of Incorrect Answers / تصحيح الإجابات الخاطئة</h3><p class="note">هنا هتلاقي كل سؤال جاوبته غلط، إجابتك، والإجابة الصحيحة للمراجعة.</p><div id="answerReview"></div>
+<p class="note">تم إظهار التصحيح بعد تسليم الاختبار فقط.</p>
+<button class="secondary" onclick="window.print()">Print Result / طباعة النتيجة</button>
+</section>
+</div>
+<script>
+const SHEET_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzvNUBUuV1azpP4UDi9yXsth2SowAwgD0nZnUU5df85P8J42AaeFLtHKQj0ceAvv23dUw/exec";
+
+const quiz = [{t:"Soft Skills",q:"أي مهارة معناها تسمع العميل جيدًا وتفهم احتياجه قبل ما ترد؟",o:["Active Listening", "Ownership", "Empathy", "Problem Solving"],a:0},
+{t:"Soft Skills",q:"شرح خطوات حل المشكلة بطريقة واضحة وبسيطة يعبّر عن أي مهارة؟",o:["Communication Skills", "Positive Language", "Empathy", "Ownership"],a:0},
+{t:"Soft Skills",q:"إظهار الاهتمام بمشكلة العميل وتفهم شعوره هو مثال على:",o:["Problem Solving", "Empathy", "Active Listening", "Communication Skills"],a:1},
+{t:"Soft Skills",q:"تتحمل مسؤولية متابعة المشكلة حتى الحل. أي skill؟",o:["Ownership", "Positive Language", "Empathy", "Active Listening"],a:0},
+{t:"Soft Skills",q:"تراجع البيانات وتحدد السبب وتختار أنسب حل بدل اقتراحات عشوائية. هذا هو:",o:["Communication Skills", "Problem Solving", "Ownership", "Empathy"],a:1},
+{t:"Soft Skills",q:"أي عبارة تمثل Positive Language؟",o:["دي مش مسؤوليتي", "مفيش حل", "خليني أشوف الحل المتاح", "مش هقدر أساعدك"],a:2},
+{t:"Follow-up Process",q:"طبقًا للصورة، ما الحالتان اللتان تحتاجان Follow-up بشكل أساسي؟",o:["Slow Performance وLine Unstable", "Billing وBundle Renewal", "Password Reset وNew Subscription", "كل المكالمات دون استثناء"],a:0},
+{t:"Follow-up Process",q:"لو اتخذت كل الإجراءات أثناء مكالمة Slow Performance لكن لم تعمل follow-up، ما أثر ذلك حسب الصورة؟",o:["لا يوجد تأثير", "المكالمة قد تُحسب Auto Fail", "تتحول تلقائيًا إلى FCR", "يتم حذف الـActivity"],a:1},
+{t:"Follow-up Process",q:"هل نحتاج متابعة العميل حتى لو لم نعده صراحةً بمتابعة؟",o:["لا، المتابعة فقط لو وعدناه", "نعم، إذا كانت الحالة من الحالات التي تحتاج Follow-up", "فقط لو العميل اتصل مرة أخرى", "فقط لو طلب المشرف"],a:1},
+{t:"Follow-up Process",q:"إذا لم يرد العميل في محاولة المتابعة، ما الإجراء المطلوب؟",o:["نرسل SMS على الرقم الذي يتم التواصل عليه ونترك Activity", "نغلق الحالة دون تسجيل", "نرسل SMS فقط دون Activity", "نكرر الاتصال فورًا بلا تسجيل"],a:0},
+{t:"Follow-up Process",q:"لو العميل بيتصل من رقم مختلف عن رقم الخدمة ولم يرد في المتابعة، نرسل SMS على:",o:["الرقم الذي اتصل منه فقط", "الرقم المرتبط بالخدمة", "رقم المشرف", "أي رقم عشوائي"],a:1},
+{t:"Follow-up Process",q:"لو وعدت العميل باتصال في وقت محدد، ما المطلوب؟",o:["الاتصال في أي وقت خلال اليوم", "الاتصال في نفس الموعد دون تأخير", "إرسال SMS بدل الاتصال", "انتظار العميل حتى يعاود الاتصال"],a:1},
+{t:"Follow-up Process",q:"ما فائدة الالتزام بالـFollow-up كما توضح الصورة؟",o:["تحسين NPS وQuality", "تقليل عدد المكالمات فقط", "إلغاء الحاجة إلى Activity", "تجنب التحدث مع العميل"],a:0},
+{t:"Follow-up Trials",q:"ما توقيت الرسالة الأولى عند عدم الرد؟",o:["بعد 5 دقائق", "بعد 15 دقيقة", "بعد 30 دقيقة", "بعد ساعة"],a:1},
+{t:"Follow-up Trials",q:"ما توقيت المحاولة الثانية حسب الـFollow-up Trials؟",o:["بعد 15 دقيقة", "بعد 20 دقيقة", "بعد 30 دقيقة", "بعد ساعة"],a:2},
+{t:"Follow-up Trials",q:"ما توقيت المحاولة الثالثة حسب الصورة؟",o:["بعد 15 دقيقة", "بعد 30 دقيقة", "بعد 45 دقيقة", "بعد ساعتين"],a:1},
+{t:"Follow-up Trials",q:"ما اسم SMS Sender الظاهر في الـFollow-up Trials؟",o:["VF-2828", "Vodafone Egypt", "111", "ICC Team"],a:0},
+{t:"Follow-up Trials",q:"أي Template يستخدم في المحاولة الثانية؟",o:["Follow up 1st", "Not reached", "Solved", "Directed to TE"],a:1},
+{t:"Inbound Calls",q:"ما البداية الصحيحة في Inbound Call Handling Standard Script؟",o:["صباح/مساء الخير، مع حضرتك ... ممكن أتشرف بالاسم؟", "أيوه، قول المشكلة", "معاك فودافون، استنى", "حضرتك اتصلت ليه؟"],a:0},
+{t:"Inbound Calls",q:"قبل وضع العميل على Hold، ما العبارة المناسبة؟",o:["استأذن حضرتك لحظات أراجع استفسارك", "استنى على الخط", "هقفل وأرجعلك", "مش عارف، لحظة"],a:0},
+{t:"Inbound Calls",q:"ما الحد الأقصى للـHold الواحد الموضح في الصورة؟",o:["دقيقة واحدة", "دقيقتان", "3 دقائق", "5 دقائق"],a:1},
+{t:"Inbound Calls",q:"عند الرجوع من الـHold، ماذا تقول؟",o:["شكرًا لانتظار حضرتك وبعتذر عن التأخير", "أخيرًا رجعت", "كنت مشغول", "كرر المشكلة من الأول"],a:0},
+{t:"Inbound Calls",q:"إذا احتاجت الحالة أكثر من Hold، ما التصرف الصحيح؟",o:["تترك العميل على Hold دون تحديث", "توضح للعميل أنك تتابع الاستفسار وتعود إليه، مع عدم تجاوز دقيقتين للـHold", "تنهي المكالمة", "تعده بحل فوري دون تأكد"],a:1},
+{t:"Inbound Calls",q:"لو الـCase محتاجة وقتًا أطول من المتاح في المكالمة، ما المطلوب؟",o:["توضح للعميل أنك ستتابع وترجع له في الوقت المحدد دون Over-promise", "تغلق المكالمة فورًا", "تقول له اتصل غدًا", "تتجاهل طلبه"],a:0},
+{t:"Inbound Calls",q:"ما سؤال الإغلاق المناسب قبل إنهاء Inbound Call؟",o:["في أي استفسار تاني لحضرتك؟", "خلصنا؟", "عايز حاجة بسرعة؟", "اتصل تاني لو المشكلة رجعت"],a:0},
+{t:"Outbound Calls",q:"ما افتتاحية Outbound Call الظاهرة في الصورة؟",o:["صباح/مساء الخير أستاذ ... مع حضرتك ... من فودافون، كنت بتابع مع حضرتك بخصوص استفسارك", "أيوه يا فندم، المشكلة اتحلت؟", "معاك فودافون، لازم تسمعني", "حضرتك اتصلت بينا؟"],a:0},
+{t:"Outbound Calls",q:"في Outbound follow-up، ما الغرض الذي توضحه للعميل في الافتتاح؟",o:["متابعة استفساره السابق", "بيع خدمة جديدة فقط", "تأكيد بيانات الفاتورة فقط", "إبلاغه بإغلاق حسابه"],a:0},
+{t:"Outbound Calls",q:"ما التصرف المناسب في Closing للـOutbound Call؟",o:["تسأل إن كان لديه استفسار آخر وتشكره على وقته", "تنهي المكالمة دون شكر", "تطلب منه إعادة الاتصال فورًا", "تعيد قراءة الافتتاحية"],a:0},
+{t:"Fiber Slow – Bad Parameters",q:"أين يتم فحص قراءات الخط في حالة Fiber Slow Bad Parameters؟",o:["Router page أو Portal", "Billing screen فقط", "SMS history", "Customer profile فقط"],a:0},
+{t:"Fiber Slow – Bad Parameters",q:"إذا لم تتوفر عدة تليفون أرضي لدى العميل، ماذا يمكن أن نفعل حسب الصورة؟",o:["نرن على الخط الأرضي للتحقق من وجود رسالة مسجلة", "ننشئ SR فورًا دون فحص", "نطلب تغيير الباقة", "نوقف الخدمة"],a:0},
+{t:"Fiber Slow – Bad Parameters",q:"إذا ظهرت رسالة مسجلة تفيد أن الخط مرفوع من الخدمة، ما التوجيه؟",o:["التواصل مع المصرية للاتصالات مع توضيح أرقام التواصل", "تغيير DNS", "عمل Hard Reset فقط", "إنشاء Outbound case"],a:0},
+{t:"Fiber Slow – Bad Parameters",q:"إذا استجاب العميل لمكالمة الخط الأرضي، ما الخطوة التالية؟",o:["توصيل الراوتر بالخط الرئيسي وإعادة فحص كفاءة الخط", "تغيير الراوتر فورًا", "إغلاق الحالة", "تغيير DNS إلى أي DNS"],a:0},
+{t:"Fiber Slow – Bad Parameters",q:"إذا تحسنت كفاءة الخط بعد التوصيل على Main Line، ماذا تفعل؟",o:["تتابع مع العميل مرة أخرى للتأكد من استقرار الخط واستمرار التوصيل المباشر", "تنشئ شكوى مباشرة دون متابعة", "تطلب إلغاء الخدمة", "تغير البورت"],a:0},
+{t:"Fiber Slow – Bad Parameters",q:"إذا كان العميل يستخدم ADSL router، ما التوجيه المذكور؟",o:["Upgrade إلى VDSL+ router", "تغيير ONU", "تغيير رقم الخط الأرضي", "إلغاء الـWi-Fi"],a:0},
+{t:"Fiber Slow – Bad Parameters",q:"إذا استمرت نفس كفاءة الخط بعد الخطوات السابقة، ما SR path؟",o:["Individual – ADSL Line Process – Service Quality – Slow Performance", "Individual – ADSL Line Process – Service Disconnection – Internal LAN", "Billing – Wrong Quota", "Installation – FTTH Migration"],a:0},
+{t:"Fiber Slow – Bad Parameters",q:"ما Activity المذكورة لمتابعة حالة كفاءة الخط؟",o:["Internet CC – ADSL – Slow Performance", "Internet CC – ADSL – Line Down", "Internet CC – ADSL – Line Unstable", "Billing – Follow-up"],a:0},
+{t:"Slow Good Cases",q:"ما الحد الذي يميز Slow Good Parameters في الصورة؟",o:["Maximum downstream rate أعلى من 8 Mbps", "Maximum downstream rate أقل من 1 Mbps", "DSL Up Time أقل من 3 دقائق", "Port status Locked"],a:0},
+{t:"Slow Good Cases",q:"أي حالات Quota يجب فحصها؟",o:["Throttled, Grace, Welcome", "Promoter, Passive, Detractor", "Open, Closed, Pending", "Inbound, Outbound, Hold"],a:0},
+{t:"Slow Good Cases",q:"ما الحالة المطلوبة للـPCRF؟",o:["Active", "Suspended", "Locked", "Offline"],a:0},
+{t:"Slow Good Cases",q:"إذا كان هناك Global Outage، أين يجب التحقق؟",o:["رسالة/إيميل Global Outage من الـFloor", "من العميل فقط", "من SMS Sender", "من الراوتر فقط"],a:0},
+{t:"Slow Good Cases",q:"أي DNS يجب التأكد منه؟",o:["Vodafone DNS", "أي DNS يختاره الموظف", "Google DNS دائمًا", "DNS Disabled"],a:0},
+{t:"Slow Good Cases",q:"كيف يتم اختبار البطء مع العميل؟",o:["من جهاز واحد، ونسأله هل البطء في موقع معين أم كل الاستخدامات، ونجرب موقعًا موثوقًا مثل YouTube", "من كل الأجهزة في نفس الوقت", "من تطبيق واحد غير موثوق", "من خلال Wi-Fi الجيران"],a:0},
+{t:"Slow Good Cases",q:"إذا استمرت المشكلة، ما الإجراء المذكور للراوتر؟",o:["Hard Reset ثم Configuration للراوتر وإعادة الاختبار", "تغيير الباقة مباشرة", "إنشاء Line Monitor فورًا", "تغيير البورت دون فحص"],a:0},
+{t:"Slow Good Cases",q:"هل يتم إنشاء Requests في حالة Slow Good Parameters؟",o:["لا، لا يتم عمل طلبات بخصوص Slow Good Parameters", "نعم، Slow Performance SR دائمًا", "نعم، Line Monitor SR", "نعم، Internal LAN SR"],a:0},
+{t:"Slow Good Cases",q:"متى نغير DNS من Vodafone DNS؟",o:["فقط إذا طلب العميل بنفسه DNS معينًا", "كلما كانت السرعة أقل من 20 Mbps", "في كل مكالمة", "بعد كل Hard Reset"],a:0},
+{t:"Slow Good Cases",q:"ما وضع Channel المطلوب في هذه الحالة؟",o:["Auto", "Manual", "Locked", "Offline"],a:0},
+{t:"Slow Good Cases",q:"ما Activity في نهاية المكالمة؟",o:["Internet CC – ADSL – Slow Performance – Slow Good Parameters / No Problem Found", "Internet CC – ADSL – Line Down", "Internet CC – ADSL – Line Unstable", "Billing – Wrong Quota"],a:0},
+{t:"Fiber Line Unstable",q:"ما السؤال المهم لتحديد شكوى العميل؟",o:["هل عدم الاستقرار في اللمبات أم تقطيع وبطء أثناء الاستخدام؟", "هل يريد تغيير الباقة؟", "هل لديه أكثر من جهاز؟", "هل يريد إلغاء الخدمة؟"],a:0},
+{t:"Fiber Line Unstable",q:"ما القراءات التي يتم فحصها من صفحة الراوتر؟",o:["System Up Time وDSL Up Time", "Download فقط", "Billing date وQuota", "DNS وWi-Fi password فقط"],a:0},
+{t:"Fiber Line Unstable",q:"ما نوع الراوتر ونوع البورت المطلوب التأكد منهما؟",o:["VDSL router وVDSL port", "ADSL router وADSL port فقط", "ONT فقط", "أي نوع دون مراجعة"],a:0},
+{t:"Fiber Line Unstable",q:"ما الاختبار المطلوب على الخط الأرضي؟",o:["توصيل عدة التليفون على السلك الرئيسي وعمل مكالمة", "تغيير DNS", "عمل Speed Test فقط", "فصل السلك الرئيسي"],a:0},
+{t:"Fiber Line Unstable",q:"إذا لم تتوفر عدة تليفون أرضي، ماذا نفعل؟",o:["نرن على الخط ونفحص وجود رسالة مسجلة؛ وإذا لا توجد حرارة نوجه العميل للسنترال", "نغلق الحالة", "ننشئ Slow Good SR", "نغير الراوتر"],a:0},
+{t:"Fiber Line Unstable",q:"بعد التأكد من وجود الحرارة، ما الذي يجب فحصه؟",o:["DLM", "DNS فقط", "Quota فقط", "SMS Sender"],a:0},
+{t:"Fiber Line Unstable",q:"متى تتم متابعة العميل للتأكد من استقرار الخدمة؟",o:["خلال 45 دقيقة (ساعة إلا ربع)", "خلال 15 دقيقة", "خلال ساعتين", "بعد 24 ساعة"],a:0},
+{t:"Fiber Line Unstable",q:"إذا استمر عدم الاستقرار بعد الخطوات والمتابعة، ما SR path؟",o:["Individual – ADSL Line Process – Service Quality – Line Monitor", "Individual – ADSL Line Process – Service Quality – Slow Performance", "Service Disconnection – Internal LAN", "Billing – Wrong Quota"],a:0},
+{t:"Fiber Line Unstable",q:"ما Activity المذكور للحالة؟",o:["Internet CC – ADSL – Line Unstable", "Internet CC – ADSL – Slow Good Parameters", "Internet CC – ADSL – Line Down", "Billing – Follow-up"],a:0},
+{t:"Fiber Line Unstable",q:"ماذا يحدث للمكالمة إذا لم يتم عمل Follow-up في حالة Line Unstable؟",o:["Auto Fail لأن الحالة تحتاج Follow-up", "تتحول إلى Promoter", "تغلق كـFCR تلقائيًا", "لا يوجد أي تأثير"],a:0},
+{t:"Fiber Internal Line Down",q:"ما أول فحص في حالة Internet Disconnected / Line Down؟",o:["MSAN All وPort status", "DNS فقط", "Speed Test فقط", "NPS history"],a:0},
+{t:"Fiber Internal Line Down",q:"إذا كان Voice Status = Suspended، ما التفسير المذكور؟",o:["على العميل فاتورة خط أرضي؛ بعد السداد وعودة الحرارة تعمل الخدمة", "الراوتر يحتاج Hard Reset", "DNS غير صحيح", "العميل يحتاج VDSL router"],a:0},
+{t:"Fiber Internal Line Down",q:"إذا كان Port Locked، ما الإجراء؟",o:["Unlock Port", "Change DNS", "Create Slow Performance SR", "Change package"],a:0},
+{t:"Fiber Internal Line Down",q:"إذا لم تتوفر Handset لدى العميل، ما البديل؟",o:["نرن على الخط الأرضي للتحقق من رسالة مسجلة، أو نعرض Follow-up في وقت توافر الجهاز", "ننشئ SR فورًا دون فحص", "نطلب شراء راوتر جديد", "نغلق المكالمة"],a:0},
+{t:"Fiber Internal Line Down",q:"إذا لم توجد حرارة على الخط الأرضي، ما التوجيه؟",o:["Customer to TE Directed مع توضيح Hotline 111 أو 19777 أو 01555000111", "Change DNS", "Hard Reset", "Create Slow Good activity"],a:0},
+{t:"Fiber Internal Line Down",q:"بعد التأكد من وجود الحرارة، ماذا نطلب من العميل؟",o:["توصيل الراوتر على نفس السلك الرئيسي", "توصيل الراوتر على Splitter فقط", "تغيير كابل Ethernet", "إيقاف الراوتر"],a:0},
+{t:"Fiber Internal Line Down",q:"ما SR path المذكور لحالة Line Down؟",o:["Individual – ADSL Line Process – Service Disconnection – Internal LAN", "Individual – ADSL Line Process – Service Quality – Line Monitor", "Service Quality – Slow Performance", "Billing – Wrong Quota"],a:0},
+{t:"Fiber Internal Line Down",q:"ما Activity المذكور للحالة؟",o:["Internet ICC – ADSL – Line Down – Create SR / Solved", "Internet CC – ADSL – Slow Good Parameters", "Internet CC – ADSL – Line Unstable", "Follow-up – Not Reached"],a:0}];
+
+let current=0,answers={};
+const $=id=>document.getElementById(id);
+
+function renderTop(){
+ $('count').textContent=`Question ${current+1} of ${quiz.length}`;
+ $('answered').textContent=`Answered: ${Object.keys(answers).length} / ${quiz.length}`;
+ $('bar').style.width=`${Object.keys(answers).length/quiz.length*100}%`;
+}
+
+function render(){
+ const q=quiz[current];
+ $('questionArea').innerHTML=`<div class="qcard"><div class="qhead"><span class="num">Question ${current+1}</span><span class="topic">${q.t}</span></div><div class="question">${q.q}</div>${q.o.map((v,i)=>`<label class="option"><input type="radio" name="answer" value="${i}" ${answers[current]===i?'checked':''}><span>${String.fromCharCode(65+i)}. ${v}</span></label>`).join('')}</div>`;
+ $('questionArea').querySelectorAll('input').forEach(el=>el.addEventListener('change',e=>{answers[current]=Number(e.target.value);renderTop();}));
+ $('prev').disabled=current===0;$('next').classList.toggle('hidden',current===quiz.length-1);$('submit').classList.toggle('hidden',current!==quiz.length-1);renderTop();
+}
+
+$('prev').onclick=()=>{if(current>0){current--;render();}};
+$('next').onclick=()=>{if(current<quiz.length-1){current++;render();}};
+
+async function sendToSheet(payload){
+ const sheetStatusEl=$('sheetStatus');
+ if(!SHEET_SCRIPT_URL || SHEET_SCRIPT_URL === "https://script.google.com/macros/s/AKfycbzvNUBUuV1azpP4UDi9yXsth2SowAwgD0nZnUU5df85P8J42AaeFLtHKQj0ceAvv23dUw/exec"){
+  sheetStatusEl.textContent="تنبيه: لم يتم وضع رابط Google Apps Script بعد (تم عرض النتيجة فقط).";
+  return;
+ }
+ sheetStatusEl.textContent="جاري حفظ النتيجة في Google Sheet...";
+ try{
+  await fetch(SHEET_SCRIPT_URL,{
+   method:"POST",
+   mode:"no-cors",
+   headers:{"Content-Type":"text/plain;charset=utf-8"},
+   body:JSON.stringify(payload)
+  });
+  sheetStatusEl.textContent="تم حفظ النتيجة في Google Sheet بنجاح ✅";
+ }catch(err){
+  sheetStatusEl.textContent="تعذر إرسال النتيجة إلى Google Sheet تلقائيًا ❌";
+ }
+}
+
+$('submit').onclick=async ()=>{
+ for(const id of ['agentName','username','site','supervisor','leader']){if(!$(id).value.trim()){ $(id).focus();alert('Please complete all Agent Details fields.');return;}}
+ if(Object.keys(answers).length!==quiz.length){alert(`Please answer all questions. Remaining: ${quiz.length-Object.keys(answers).length}`);return;}
+ let correct=0,byTopic={};
+ quiz.forEach((q,i)=>{if(!byTopic[q.t])byTopic[q.t]={correct:0,total:0};byTopic[q.t].total++;if(answers[i]===q.a){correct++;byTopic[q.t].correct++;}});
+ const wrong=quiz.length-correct,pct=Math.round(correct/quiz.length*100),passed=pct>=80;
+ const statusText=passed?'PASSED – ناجح':'NOT PASSED – لم يجتز';
+ $('quizPanel').classList.add('hidden');$('candidate').classList.add('hidden');$('result').style.display='block';
+ $('score').textContent=`${correct} / ${quiz.length}  (${pct}%)`;
+ $('status').textContent=statusText;$('status').className='status '+(passed?'pass':'fail');
+ $('correctStat').textContent=correct;$('wrongStat').textContent=wrong;
+ $('summary').textContent=`Agent: ${$('agentName').value} | Username: ${$('username').value} | Site: ${$('site').value} | Supervisor: ${$('supervisor').value} | Team Leader: ${$('leader').value}`;
+ $('topicBreakdown').innerHTML=Object.entries(byTopic).map(([t,v])=>`<div class="topicrow"><span>${t}</span><b>${v.correct}/${v.total} (${Math.round(v.correct/v.total*100)}%)</b></div>`).join('');
+ const wrongItems=quiz.map((q,i)=>({q,i})).filter(x=>answers[x.i]!==x.q.a);
+ $('answerReview').innerHTML=wrongItems.length
+ ? wrongItems.map(({q,i})=>`<div class="qcard"><div class="qhead"><span class="num">Question ${i+1}</span><span class="topic">${q.t}</span></div><div class="question">${q.q}</div><p style="color:#c00000"><b>Your Answer / إجابتك:</b> ${String.fromCharCode(65+answers[i])}. ${q.o[answers[i]]}</p><p style="color:#07834b"><b>Correct Answer / الإجابة الصحيحة:</b> ${String.fromCharCode(65+q.a)}. ${q.o[q.a]}</p></div>`).join('')
+ : '<div class="qcard"><b style="color:#07834b">Excellent! All answers are correct. / ممتاز! كل إجاباتك صحيحة.</b></div>';
+ window.scrollTo({top:0,behavior:'smooth'});
+
+ await sendToSheet({
+  agentName:$('agentName').value.trim(),
+  username:$('username').value.trim(),
+  site:$('site').value.trim(),
+  supervisor:$('supervisor').value.trim(),
+  leader:$('leader').value.trim(),
+  score:`${correct} / ${quiz.length}`,
+  percentage:`${pct}%`,
+  status:statusText,
+  correct:correct,
+  wrong:wrong
+ });
+};
+render();
+</script></body></html>
